@@ -32,8 +32,7 @@ public class IKGradientDynamic : MonoBehaviour
         theta = new float[n * 2]; // 2 angles per joint (pitch, yaw)
         lengths = new float[n];
 
-        for (int i = 0; i < n; i++)
-            lengths[i] = Vector3.Distance(joints[i].position, joints[i + 1].position);
+        for (int i = 0; i < n; i++) { lengths[i] = Vector3.Distance(joints[i].position, joints[i + 1].position); }
 
         m = new float[theta.Length];
         v = new float[theta.Length];
@@ -43,21 +42,23 @@ public class IKGradientDynamic : MonoBehaviour
 
     private void Update()
     {
+        HandleJointLocations();
+        HandleJointRotations();
+    }
+
+    private void HandleJointLocations()
+    {
         if (costFunction > tolerance)
         {
             float[] grad = CalculateGradient(theta);
             float[] step = AdamStep(grad);
 
             float[] newTheta = new float[theta.Length];
-            for (int i = 0; i < theta.Length; i++)
-                newTheta[i] = theta[i] - step[i];
-
-            for (int i = 0; i < theta.Length; i++)
-                newTheta[i] = Mathf.Clamp(newTheta[i], jointLimits.x, jointLimits.y);
+            for (int i = 0; i < theta.Length; i++) { newTheta[i] = theta[i] - step[i]; }
+            for (int i = 0; i < theta.Length; i++) { newTheta[i] = Mathf.Clamp(newTheta[i], jointLimits.x, jointLimits.y); }
 
             // normalize angles to [-pi, pi]
-            for (int i = 0; i < newTheta.Length; i++)
-                newTheta[i] = Mathf.Atan2(Mathf.Sin(newTheta[i]), Mathf.Cos(newTheta[i]));
+            for (int i = 0; i < newTheta.Length; i++) { newTheta[i] = Mathf.Atan2(Mathf.Sin(newTheta[i]), Mathf.Cos(newTheta[i])); }
 
             theta = newTheta;
 
@@ -67,6 +68,17 @@ public class IKGradientDynamic : MonoBehaviour
         costFunction = Cost(theta);
     }
 
+    private void HandleJointRotations()
+    {
+        for (int i = 0; i < joints.Count - 1; i++)
+        {
+            float pitch = theta[i * 2];
+            float yaw = theta[i * 2 + 1];
+            Quaternion jointRotation = Quaternion.Euler(pitch * Mathf.Rad2Deg, yaw * Mathf.Rad2Deg, 0f);
+            joints[i].rotation = jointRotation;
+        }
+    }
+
     // ====================== IK Core =========================
     private float Cost(float[] p_theta)
     {
@@ -74,8 +86,7 @@ public class IKGradientDynamic : MonoBehaviour
         float distanceCost = Vector3.SqrMagnitude(endEffector - target.position);
 
         float angleCost = 0f;
-        for (int i = 0; i < p_theta.Length; i++)
-            angleCost += p_theta[i] * p_theta[i];
+        for (int i = 0; i < p_theta.Length; i++) { angleCost += p_theta[i] * p_theta[i]; }
 
         return distanceCost + 0.001f * angleCost;
     }
