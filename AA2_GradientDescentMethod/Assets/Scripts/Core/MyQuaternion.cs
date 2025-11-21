@@ -1,12 +1,11 @@
 using UnityEngine;
 
-public class MyQuaternion 
+public class MyQuaternion
 {
-
     public float x, y, z, w;
 
     //Quaternion constructors
-    public MyQuaternion() {x = y = z = 0f; w = 1f; }
+    public MyQuaternion() { x = y = z = 0f; w = 1f; }
     public MyQuaternion(float p_x, float p_y, float p_z, float p_w)
     {
         x = p_x;
@@ -23,7 +22,8 @@ public class MyQuaternion
     }
 
     // Conjugate and inverse (just in case)
-    public MyQuaternion Conjugate() => new MyQuaternion(-x, -y, -z, w);
+    public MyQuaternion Conjugate() => new(-x, -y, -z, w);
+    public float SqrMagnitude() => x * x + y * y + z * z + w * w;
     public MyQuaternion Inverse()
     {
         float sq = SqrMagnitude();
@@ -31,40 +31,40 @@ public class MyQuaternion
         {
             MyQuaternion c = Conjugate();
             float inv = 1f / sq;
-            return new MyQuaternion(c.x * inv, c.y * inv, c.z * inv, c.w * inv);
+            return new(c.x * inv, c.y * inv, c.z * inv, c.w * inv);
         }
         return identity;
     }
 
     //Quaeternion identity
-    public static MyQuaternion identity => new MyQuaternion(0f, 0f, 0f, 1f);
+    public static MyQuaternion identity => new(0f, 0f, 0f, 1f);
 
     //multiplication of two myquaternions (combining rotations)
-    public static MyQuaternion operator *(MyQuaternion a, MyQuaternion b)
+    public static MyQuaternion operator *(MyQuaternion p_a, MyQuaternion p_b)
     {
-        return new MyQuaternion(
-            a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
-            a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
-            a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
-            a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z
+        return new(
+            p_a.w * p_b.x + p_a.x * p_b.w + p_a.y * p_b.z - p_a.z * p_b.y,
+            p_a.w * p_b.y - p_a.x * p_b.z + p_a.y * p_b.w + p_a.z * p_b.x,
+            p_a.w * p_b.z + p_a.x * p_b.y - p_a.y * p_b.x + p_a.z * p_b.w,
+            p_a.w * p_b.w - p_a.x * p_b.x - p_a.y * p_b.y - p_a.z * p_b.z
         );
     }
 
     //create a quaternion from an angle and axis
-    public static MyQuaternion AngleAxis(float angle, Vector3 axis)
+    public static MyQuaternion AngleAxis(float p_angle, Vector3 p_axis)
     {
-        if (axis.sqrMagnitude == 0.0f) return MyQuaternion.identity;
+        if (p_axis.sqrMagnitude == 0.0f) { return identity; }
 
-        float rad = angle * Mathf.Deg2Rad * 0.5f;
+        float rad = p_angle * Mathf.Deg2Rad * 0.5f;
         float sin = Mathf.Sin(rad);
         float cos = Mathf.Cos(rad);
 
-        Vector3 naxis = axis.normalized;
+        Vector3 naxis = p_axis.normalized;
 
         return new MyQuaternion(naxis.x * sin, naxis.y * sin, naxis.z * sin, cos);
     }
 
-     // Implicit conversions between MyQuaternion and Unity's Quaternion
-    public static implicit operator Quaternion(MyQuaternion q) => new Quaternion(q.x, q.y, q.z, q.w);
-    public static implicit operator MyQuaternion(Quaternion q) => new MyQuaternion(q.x, q.y, q.z, q.w);
+    // Implicit conversions between MyQuaternion and Unity's Quaternion
+    public static implicit operator Quaternion(MyQuaternion q) => new(q.x, q.y, q.z, q.w);
+    public static implicit operator MyQuaternion(Quaternion q) => new(q.x, q.y, q.z, q.w);
 }

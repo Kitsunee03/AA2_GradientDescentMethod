@@ -6,12 +6,17 @@ public class CameraController : MonoBehaviour
     [SerializeField] private GameObject m_target;
 
     [Header("Movement")]
-    [SerializeField, Min(0)] private Vector2 distanceLimits = new(1.5f, 50f);
+    [SerializeField, Min(0)] private Vector2 distanceLimits = new(0.5f, 10f);
     [SerializeField, Min(0)] private float m_cameraLerp = 20f;
     private float m_targetDistance;
     private float rotationX, rotationY;
 
-    private void Awake() { m_targetDistance = distanceLimits.y / 2; }
+    private void Awake()
+    {
+        m_targetDistance = distanceLimits.y / 2;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
 
     private void LateUpdate()
     {
@@ -24,12 +29,9 @@ public class CameraController : MonoBehaviour
     private void HandleRotation()
     {
         // mouse movement
-        if (Mouse.current.rightButton.isPressed)
-        {
-            Vector2 mouseDelta = Mouse.current.delta.ReadValue();
-            rotationX -= mouseDelta.y * 0.1f;
-            rotationY += mouseDelta.x * 0.1f;
-        }
+        Vector2 mouseDelta = Mouse.current.delta.ReadValue();
+        rotationX -= mouseDelta.y * 0.1f;
+        rotationY += mouseDelta.x * 0.1f;
 
         rotationX = Mathf.Clamp(rotationX, -40, 50f);
         transform.eulerAngles = new(rotationX, rotationY, 0);

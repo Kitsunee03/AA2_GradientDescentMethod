@@ -12,7 +12,9 @@ public class MyVector3
     }
 
     public static MyVector3 right { get { return new(1, 0, 0); } }
+    public static MyVector3 left { get { return new(-1, 0, 0); } }
     public static MyVector3 forward { get { return new(0, 0, 1); } }
+    public static MyVector3 back { get { return new(0, 0, -1); } }
     public static MyVector3 up { get { return new(0, 1, 0); } }
     public static MyVector3 zero { get { return new(0, 0, 0); } }
 
