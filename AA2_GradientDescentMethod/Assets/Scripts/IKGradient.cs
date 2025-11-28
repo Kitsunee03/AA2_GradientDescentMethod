@@ -8,41 +8,66 @@ public class IKGradientDynamic : MonoBehaviour
     [SerializeField] private Transform target;
 
     [Header("IK Parameters")]
-    [SerializeField] private float alpha = 0.1f;
+    [SerializeField] private float alpha = 0.08f;
+    [SerializeField] private float smoothing = 0.15f;
+    [SerializeField] private int iterationsPerFrame = 3;
+    [SerializeField] private float endEffectorBias = 2.5f;
     private const float tolerance = 0.001f;
 
-    [Header("Joint Limits (radians)")]
-    [SerializeField] private Vector2 jointLimits = new(-1.5f, 1.5f);
+    [Header("Joint Limits (degrees, relative to initial rotation)")]
+    [Tooltip("Límites de movimiento relativo desde la rotación inicial")]
+    [SerializeField] private Vector2 relativePitchLimits = new Vector2(-60f, 60f);
+    [SerializeField] private Vector2 relativeYawLimits = new Vector2(-60f, 60f);
 
-    // each joint has two DOF: yaw (y) and pitch (x)
     private float[] theta;
+    private float[] thetaSmooth;
+    private float[] thetaInitial; // Ángulos iniciales como referencia
     private float[] lengths;
     private float costFunction;
-
-    [Header("Adam optimizer")]
-    private const float beta1 = 0.9f;
-    private const float beta2 = 0.999f;
-    private const float epsilon = 1e-8f;
-    private float[] m, v;
-    private int t = 0;
 
     private void Awake()
     {
         int n = joints.Count - 1;
-        theta = new float[n * 2]; // 2 angles per joint (pitch, yaw)
+        theta = new float[n * 2];
+        thetaSmooth = new float[n * 2];
+        thetaInitial = new float[n * 2]; // Guardar rotaciones iniciales
         lengths = new float[n];
 
-        for (int i = 0; i < n; i++) { lengths[i] = Vector3.Distance(joints[i].position, joints[i + 1].position); }
+        // Calcular longitudes originales
+        for (int i = 0; i < n; i++)
+        {
+            lengths[i] = Vector3.Distance(joints[i].position, joints[i + 1].position);
+        }
 
-        m = new float[theta.Length];
-        v = new float[theta.Length];
+        // Guardar rotaciones iniciales y usar como punto de partida
+        for (int i = 0; i < n; i++)
+        {
+            float pitchDeg = joints[i].localEulerAngles.x;
+            float yawDeg = joints[i].localEulerAngles.y;
+
+            // Convertir a radianes con signo
+            float pitch = Mathf.Deg2Rad * Mathf.DeltaAngle(0f, pitchDeg);
+            float yaw = Mathf.Deg2Rad * Mathf.DeltaAngle(0f, yawDeg);
+
+            // Guardar como inicial
+            thetaInitial[i * 2] = pitch;
+            thetaInitial[i * 2 + 1] = yaw;
+
+            // Empezar desde la pose inicial
+            theta[i * 2] = pitch;
+            theta[i * 2 + 1] = yaw;
+            thetaSmooth[i * 2] = pitch;
+            thetaSmooth[i * 2 + 1] = yaw;
+        }
 
         costFunction = Cost(theta);
     }
 
     private void Update()
     {
-        HandleJointLocations();
+        for (int i = 0; i < iterationsPerFrame; i++) { HandleJointLocations(); }
+
+        SmoothTheta();
         HandleJointRotations();
     }
 
@@ -51,35 +76,104 @@ public class IKGradientDynamic : MonoBehaviour
         if (costFunction > tolerance)
         {
             float[] grad = CalculateGradient(theta);
-            float[] step = AdamStep(grad);
 
-            float[] newTheta = new float[theta.Length];
-            for (int i = 0; i < theta.Length; i++) { newTheta[i] = theta[i] - step[i]; }
-            for (int i = 0; i < theta.Length; i++) { newTheta[i] = Mathf.Clamp(newTheta[i], jointLimits.x, jointLimits.y); }
+            // Ponderar gradientes - más peso a joints cerca del end-effector
+            int numJoints = joints.Count - 1;
+            for (int i = 0; i < numJoints; i++)
+            {
+                float weight = 1f + (endEffectorBias - 1f) * (i / (float)(numJoints - 1));
+                grad[i * 2] *= weight;
+                grad[i * 2 + 1] *= weight;
+            }
 
-            // normalize angles to [-pi, pi]
-            for (int i = 0; i < newTheta.Length; i++) { newTheta[i] = Mathf.Atan2(Mathf.Sin(newTheta[i]), Mathf.Cos(newTheta[i])); }
+            // Normalizar el gradiente
+            float gradMagnitude = 0f;
+            for (int i = 0; i < grad.Length; i++) { gradMagnitude += grad[i] * grad[i]; }
+            gradMagnitude = Mathf.Sqrt(gradMagnitude);
 
-            theta = newTheta;
+            if (gradMagnitude > 1e-8f)
+            {
+                float normFactor = 1f / gradMagnitude;
+                for (int i = 0; i < grad.Length; i++) { grad[i] *= normFactor; }
+            }
 
-            ForwardKinematics(theta);
+            // Gradient descent
+            float maxStep = 0.015f;
+            for (int i = 0; i < theta.Length; i++)
+            {
+                float step = -alpha * grad[i];
+                step = Mathf.Clamp(step, -maxStep, maxStep);
+                theta[i] += step;
+            }
+
+            // Aplicar límites RELATIVOS a la rotación inicial
+            for (int i = 0; i < numJoints; i++)
+            {
+                int pitchIdx = i * 2;
+                int yawIdx = i * 2 + 1;
+
+                // Obtener límites para este joint
+                Vector2 pitchLim = relativePitchLimits;
+                Vector2 yawLim = relativeYawLimits;
+
+                // Calcular ángulo relativo a la inicial
+                float pitchRad = theta[pitchIdx];
+                float yawRad = theta[yawIdx];
+
+                float pitchInitial = thetaInitial[pitchIdx];
+                float yawInitial = thetaInitial[yawIdx];
+
+                // Convertir a offset en grados desde inicial
+                float pitchOffset = Mathf.DeltaAngle(pitchInitial * Mathf.Rad2Deg, pitchRad * Mathf.Rad2Deg);
+                float yawOffset = Mathf.DeltaAngle(yawInitial * Mathf.Rad2Deg, yawRad * Mathf.Rad2Deg);
+
+                // Aplicar límites al offset
+                pitchOffset = Mathf.Clamp(pitchOffset, pitchLim.x, pitchLim.y);
+                yawOffset = Mathf.Clamp(yawOffset, yawLim.x, yawLim.y);
+
+                // Convertir de vuelta a ángulo absoluto
+                theta[pitchIdx] = (pitchInitial * Mathf.Rad2Deg + pitchOffset) * Mathf.Deg2Rad;
+                theta[yawIdx] = (yawInitial * Mathf.Rad2Deg + yawOffset) * Mathf.Deg2Rad;
+            }
+
+            // Normalizar ángulos a [-pi, pi]
+            for (int i = 0; i < theta.Length; i++) { theta[i] = Mathf.Atan2(Mathf.Sin(theta[i]), Mathf.Cos(theta[i])); }
         }
 
         costFunction = Cost(theta);
     }
 
-    private void HandleJointRotations()
+    private void SmoothTheta()
     {
-        for (int i = 0; i < joints.Count - 1; i++)
+        for (int i = 0; i < theta.Length; i++)
         {
-            float pitch = theta[i * 2];
-            float yaw = theta[i * 2 + 1];
-            Quaternion jointRotation = Quaternion.Euler(pitch * Mathf.Rad2Deg, yaw * Mathf.Rad2Deg, 0f);
-            joints[i].rotation = jointRotation;
+            float diff = Mathf.DeltaAngle(thetaSmooth[i] * Mathf.Rad2Deg, theta[i] * Mathf.Rad2Deg);
+            thetaSmooth[i] += diff * Mathf.Deg2Rad * smoothing;
+            thetaSmooth[i] = Mathf.Atan2(Mathf.Sin(thetaSmooth[i]), Mathf.Cos(thetaSmooth[i]));
         }
     }
 
-    // ====================== IK Core =========================
+    private void HandleJointRotations()
+    {
+        Quaternion rotation = Quaternion.identity;
+        Vector3 pos = joints[0].position;
+
+        for (int i = 0; i < joints.Count - 1; i++)
+        {
+            float pitch = thetaSmooth[i * 2];
+            float yaw = thetaSmooth[i * 2 + 1];
+
+            Quaternion jointRotation = Quaternion.Euler(pitch * Mathf.Rad2Deg, yaw * Mathf.Rad2Deg, 0f);
+            joints[i].rotation = jointRotation;
+            rotation *= jointRotation;
+
+            Vector3 targetPos = pos + rotation * Vector3.forward * lengths[i];
+            joints[i + 1].position = targetPos;
+            pos = targetPos;
+        }
+    }
+
+    #region IK Core
     private float Cost(float[] p_theta)
     {
         Vector3 endEffector = ComputeEndEffector(p_theta);
@@ -88,12 +182,28 @@ public class IKGradientDynamic : MonoBehaviour
         float angleCost = 0f;
         for (int i = 0; i < p_theta.Length; i++) { angleCost += p_theta[i] * p_theta[i]; }
 
-        return distanceCost + 0.001f * angleCost;
+        // Penalty por acercarse a los límites (soft constraint)
+        float limitPenalty = 0f;
+        int numJoints = joints.Count - 1;
+        for (int i = 0; i < numJoints; i++)
+        {
+            Vector2 pitchLim = relativePitchLimits;
+            Vector2 yawLim = relativeYawLimits;
+
+            float pitchOffset = Mathf.DeltaAngle(thetaInitial[i * 2] * Mathf.Rad2Deg, p_theta[i * 2] * Mathf.Rad2Deg);
+            float yawOffset = Mathf.DeltaAngle(thetaInitial[i * 2 + 1] * Mathf.Rad2Deg, p_theta[i * 2 + 1] * Mathf.Rad2Deg);
+
+            // Penalizar si está cerca de los límites (10 grados de margen)
+            if (pitchOffset < pitchLim.x + 10f || pitchOffset > pitchLim.y - 10f) { limitPenalty += 0.1f; }
+            if (yawOffset < yawLim.x + 10f || yawOffset > yawLim.y - 10f) { limitPenalty += 0.1f; }
+        }
+
+        return distanceCost + 0.01f * angleCost + limitPenalty;
     }
 
     private float[] CalculateGradient(float[] p_theta)
     {
-        float h = 0.0001f;
+        float h = 0.001f;
         float baseCost = Cost(p_theta);
         float[] grad = new float[p_theta.Length];
         float[] temp = new float[p_theta.Length];
@@ -108,22 +218,6 @@ public class IKGradientDynamic : MonoBehaviour
         return grad;
     }
 
-    private float[] AdamStep(float[] p_grad)
-    {
-        t++;
-        float[] step = new float[p_grad.Length];
-        for (int i = 0; i < p_grad.Length; i++)
-        {
-            m[i] = beta1 * m[i] + (1 - beta1) * p_grad[i];
-            v[i] = beta2 * v[i] + (1 - beta2) * (p_grad[i] * p_grad[i]);
-            float m_hat = m[i] / (1 - Mathf.Pow(beta1, t));
-            float v_hat = v[i] / (1 - Mathf.Pow(beta2, t));
-            step[i] = alpha * m_hat / (Mathf.Sqrt(v_hat) + epsilon);
-        }
-        return step;
-    }
-
-    // ====================== FK Core =========================
     private Vector3 ComputeEndEffector(float[] p)
     {
         Vector3 pos = joints[0].position;
@@ -141,23 +235,52 @@ public class IKGradientDynamic : MonoBehaviour
 
         return pos;
     }
+    #endregion
 
-    private void ForwardKinematics(float[] p)
+    // Visualización de límites en Scene view
+    private void OnDrawGizmos()
     {
-        Vector3 pos = joints[0].position;
-        Quaternion rotation = Quaternion.identity;
+        if (joints == null || joints.Count < 2) { return; }
 
-        for (int i = 0; i < joints.Count - 1; i++)
+        int n = joints.Count - 1;
+        float[] debugThetaInitial = new float[n*2];
+
+        for (int i = 0; i < n; i++)
         {
-            float pitch = p[i * 2];
-            float yaw = p[i * 2 + 1];
-            Quaternion jointRotation = Quaternion.Euler(pitch * Mathf.Rad2Deg, yaw * Mathf.Rad2Deg, 0f);
-            rotation *= jointRotation;
+            float pitchDeg = joints[i].localEulerAngles.x;
+            float yawDeg = joints[i].localEulerAngles.y;
 
-            Vector3 targetPos = pos + rotation * Vector3.forward * lengths[i];
+            // Convertir a radianes con signo
+            float pitch = Mathf.Deg2Rad * Mathf.DeltaAngle(0f, pitchDeg);
+            float yaw = Mathf.Deg2Rad * Mathf.DeltaAngle(0f, yawDeg);
 
-            joints[i + 1].position = Vector3.Lerp(joints[i + 1].position, targetPos, 0.25f);
-            pos = targetPos;
+            // Guardar como inicial
+            debugThetaInitial[i * 2] = pitch;
+        }
+
+        // Dibujar joints
+        Gizmos.color = Color.yellow;
+        for (int i = 0; i < n; i++)
+        {
+            if (joints[i] != null) { Gizmos.DrawWireSphere(joints[i].position, 0.05f); }
+        }
+
+        // Dibujar zona de límites del primer joint (solo en play mode)
+        for (int i = 0; i < n; i++)
+        {
+            Transform joint0 = joints[i];
+            Vector2 yawLim = relativeYawLimits;
+
+            float yawInitial = debugThetaInitial[i*2] * Mathf.Rad2Deg;
+            float yawMin = yawInitial + yawLim.x;
+            float yawMax = yawInitial + yawLim.y;
+
+            // Dibujar arco de límite yaw
+            Gizmos.color = new(0, 1, 0, 0.3f);
+            Vector3 dirMin = Quaternion.Euler(0, yawMin, 0) * Vector3.forward;
+            Vector3 dirMax = Quaternion.Euler(0, yawMax, 0) * Vector3.forward;
+            Gizmos.DrawLine(joint0.position, joint0.position + dirMin * 0.5f);
+            Gizmos.DrawLine(joint0.position, joint0.position + dirMax * 0.5f);
         }
     }
 }

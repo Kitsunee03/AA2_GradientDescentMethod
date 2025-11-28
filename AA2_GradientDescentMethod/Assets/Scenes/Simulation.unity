@@ -496,10 +496,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 911544166}
     m_Modifications:
+    - target: {fileID: 2829857857360371594, guid: c4e6807abadf7034ca80376f9f4a3d4b, type: 3}
+      propertyPath: target
+      value: 
+      objectReference: {fileID: 22178723}
     - target: {fileID: 4824872521859377713, guid: c4e6807abadf7034ca80376f9f4a3d4b, type: 3}
       propertyPath: m_Name
       value: Doc
       objectReference: {fileID: 0}
+    - target: {fileID: 5469862327734675761, guid: c4e6807abadf7034ca80376f9f4a3d4b, type: 3}
+      propertyPath: target
+      value: 
+      objectReference: {fileID: 22178723}
+    - target: {fileID: 5469862327734675761, guid: c4e6807abadf7034ca80376f9f4a3d4b, type: 3}
+      propertyPath: relativeYawLimits.y
+      value: 260
+      objectReference: {fileID: 0}
+    - target: {fileID: 5506123840270381969, guid: c4e6807abadf7034ca80376f9f4a3d4b, type: 3}
+      propertyPath: target
+      value: 
+      objectReference: {fileID: 22178723}
     - target: {fileID: 8248839339664683303, guid: c4e6807abadf7034ca80376f9f4a3d4b, type: 3}
       propertyPath: target
       value: 
