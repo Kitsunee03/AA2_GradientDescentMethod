@@ -508,10 +508,6 @@ PrefabInstance:
       propertyPath: target
       value: 
       objectReference: {fileID: 22178723}
-    - target: {fileID: 5469862327734675761, guid: c4e6807abadf7034ca80376f9f4a3d4b, type: 3}
-      propertyPath: relativeYawLimits.y
-      value: 260
-      objectReference: {fileID: 0}
     - target: {fileID: 5506123840270381969, guid: c4e6807abadf7034ca80376f9f4a3d4b, type: 3}
       propertyPath: target
       value: 
