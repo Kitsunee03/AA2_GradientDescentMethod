@@ -5,6 +5,10 @@ public class SpiderManController : MonoBehaviour
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 5f;
     
+    [Header("Plane Bounds")]
+    [SerializeField] private Collider planeBounds;
+    [SerializeField] private float planeYOffset = 0.5f;
+    
     [Header("Random Movement")]
     [SerializeField] private bool randomMovement = true;
     [SerializeField] private float changeDirectionInterval = 2f;
@@ -19,7 +23,6 @@ public class SpiderManController : MonoBehaviour
     private Rigidbody rb;
     private Vector3 randomDirection;
     private float directionTimer;
-    private bool isGrounded;
     
     void Start()
     {
@@ -66,28 +69,24 @@ public class SpiderManController : MonoBehaviour
         ClampToBounds();
         
         // Face movement direction
-        if (movement.magnitude > 0.01f)
+        if (randomDirection.magnitude > 0.01f)
         {
-            transform.forward = Vector3.Lerp(transform.forward, movement.normalized, Time.deltaTime * 5f);
+            transform.forward = Vector3.Lerp(transform.forward, randomDirection, Time.deltaTime * 5f);
         }
     }
 
     void ChooseRandomDirection()
     {
-        float angle = Random.Range(0f, 360f);
-        randomDirection = new Vector3(
-            Mathf.Cos(angle * Mathf.Deg2Rad),
-            0,
-            Mathf.Sin(angle * Mathf.Deg2Rad)
-        );
-        
-        // Randomly add vertical movement
-        if (Random.value < 0.3f)
+        // Solo 4 direcciones cardinales
+        int direction = Random.Range(0, 4);
+        randomDirection = direction switch
         {
-            randomDirection.y = Random.Range(-0.5f, 0.5f);
-        }
-        
-        randomDirection.Normalize();
+            0 => new Vector3(1, 0, 0),  
+            1 => new Vector3(-1, 0, 0),  
+            2 => new Vector3(0, 0, 1),   
+            3 => new Vector3(0, 0, -1),  
+            _ => new Vector3(1, 0, 0)
+        };
     }
 
     void FollowPredefinedPath()
@@ -110,9 +109,23 @@ public class SpiderManController : MonoBehaviour
     void ClampToBounds()
     {
         Vector3 pos = transform.position;
-        pos.x = Mathf.Clamp(pos.x, movementAreaMin.x, movementAreaMax.x);
-        pos.z = Mathf.Clamp(pos.z, movementAreaMin.y, movementAreaMax.y);
-        pos.y = Mathf.Max(pos.y, 0.5f); // Keep above ground
+        
+        if (planeBounds != null)
+        {
+            // Usar los bounds del plano
+            Bounds bounds = planeBounds.bounds;
+            pos.x = Mathf.Clamp(pos.x, bounds.min.x, bounds.max.x);
+            pos.z = Mathf.Clamp(pos.z, bounds.min.z, bounds.max.z);
+            pos.y = bounds.center.y + planeYOffset; // Mantener la altura del plano + offset
+        }
+        else
+        {
+            // Usar los valores del inspector como fallback
+            pos.x = Mathf.Clamp(pos.x, movementAreaMin.x, movementAreaMax.x);
+            pos.z = Mathf.Clamp(pos.z, movementAreaMin.y, movementAreaMax.y);
+            pos.y = Mathf.Max(pos.y, 0.5f); // Keep above ground
+        }
+        
         transform.position = pos;
     }
 }
