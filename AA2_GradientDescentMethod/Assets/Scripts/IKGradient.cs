@@ -21,7 +21,7 @@ public class IKGradient : MonoBehaviour
     private float costFunction;
     private float[] angles; // [theta_x, theta_y, theta_z] per joint
     private float[] angleVelocities, previousGradient,linkLengths;
-    private Vector3[] linkDirections, initialPositions;
+    private MyVector3[] linkDirections, initialPositions;
     private int totalDOF;
 
     private void Awake() { InitializeIK(); }
@@ -40,18 +40,19 @@ public class IKGradient : MonoBehaviour
         angleVelocities = new float[totalDOF];
         previousGradient = new float[totalDOF];
         linkLengths = new float[joints.Count];
-        linkDirections = new Vector3[joints.Count];
-        initialPositions = new Vector3[joints.Count];
+        linkDirections = new MyVector3[joints.Count];
+        initialPositions = new MyVector3[joints.Count];
 
         for (int i = 0; i < joints.Count; i++) { initialPositions[i] = joints[i].position; }
         for (int i = 0; i < joints.Count; i++)
         {
-            Vector3 startPos = (i == 0) ? rootJoint.position : initialPositions[i - 1];
-            Vector3 endPos = initialPositions[i];
+            MyVector3 startPos = (i == 0) ? (MyVector3)rootJoint.position : initialPositions[i - 1];
+            MyVector3 endPos = initialPositions[i];
 
-            Vector3 linkVector = endPos - startPos;
-            linkLengths[i] = linkVector.magnitude;
-            linkDirections[i] = linkVector.sqrMagnitude > 0.00001f ? linkVector.normalized : Vector3.right;
+            MyVector3 linkVector = endPos - startPos;
+            linkLengths[i] = Mathf.Sqrt(linkVector.x * linkVector.x + linkVector.y * linkVector.y + linkVector.z * linkVector.z);
+            float sqrMag = linkVector.x * linkVector.x + linkVector.y * linkVector.y + linkVector.z * linkVector.z;
+            linkDirections[i] = sqrMag > 0.00001f ? linkVector.normalized : MyVector3.right;
         }
 
         for (int i = 0; i < totalDOF; i++) 
@@ -92,8 +93,10 @@ public class IKGradient : MonoBehaviour
 
     private float CalculateCost(float[] p_theta)
     {
-        Vector3 endEffectorPos = GetEndEffectorPosition(p_theta);
-        float distance = Vector3.Distance(endEffectorPos, target.position);
+        MyVector3 endEffectorPos = GetEndEffectorPosition(p_theta);
+        MyVector3 targetPos = target.position;
+        MyVector3 diff = endEffectorPos - targetPos;
+        float distance = Mathf.Sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
         float positionCost = distance * distance;
         
         // penalize collisions between joints
@@ -105,13 +108,14 @@ public class IKGradient : MonoBehaviour
     private float CalculateCollisionPenalty(float[] p_theta)
     {
         float penalty = 0f;
-        Vector3[] jointPositions = GetJointPositions(p_theta);
+        MyVector3[] jointPositions = GetJointPositions(p_theta);
         
         for (int i = 0; i < jointPositions.Length; i++)
         {
             for (int j = i + 2; j < jointPositions.Length; j++) // ignore adjacent joints
             {
-                float dist = Vector3.Distance(jointPositions[i], jointPositions[j]);
+                MyVector3 diff = jointPositions[i] - jointPositions[j];
+                float dist = Mathf.Sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
                 
                 // exponential penalty: stronger the closer they are
                 if (dist < minDistanceBetweenJoints * 2f)
@@ -129,25 +133,27 @@ public class IKGradient : MonoBehaviour
     // IK GRADIENT CALCULATION
     // ------------------------
 
-    private Vector3[] GetJointPositions(float[] p_theta)
+    private MyVector3[] GetJointPositions(float[] p_theta)
     {
-        Vector3[] positions = new Vector3[joints.Count];
-        Vector3 currentPos = rootJoint.position;
+        MyVector3[] positions = new MyVector3[joints.Count];
+        MyVector3 currentPos = rootJoint.position;
 
         for (int i = 0; i < joints.Count; i++)
         {
             int baseIdx = i * 3;
 
-            Vector3 localRotationDelta = new(
-                p_theta[baseIdx] * Mathf.Rad2Deg,
-                p_theta[baseIdx + 1] * Mathf.Rad2Deg,
-                p_theta[baseIdx + 2] * Mathf.Rad2Deg
-            );
+            float angleX = p_theta[baseIdx] * Mathf.Rad2Deg;
+            float angleY = p_theta[baseIdx + 1] * Mathf.Rad2Deg;
+            float angleZ = p_theta[baseIdx + 2] * Mathf.Rad2Deg;
 
-            Quaternion rotationDelta = Quaternion.Euler(localRotationDelta);
-            Vector3 rotatedDirection = rotationDelta * linkDirections[i];
+            MyQuaternion rotX = MyQuaternion.AngleAxis(angleX, Vector3.right);
+            MyQuaternion rotY = MyQuaternion.AngleAxis(angleY, Vector3.up);
+            MyQuaternion rotZ = MyQuaternion.AngleAxis(angleZ, Vector3.forward);
+            MyQuaternion rotationDelta = rotZ * rotY * rotX;
+            
+            MyVector3 rotatedDirection = rotationDelta * linkDirections[i];
 
-            currentPos += rotatedDirection * linkLengths[i];
+            currentPos = currentPos + rotatedDirection * linkLengths[i];
             positions[i] = currentPos;
         }
 
@@ -184,24 +190,26 @@ public class IKGradient : MonoBehaviour
     // FORWARD KINEMATICS
     // ------------------------
 
-    private Vector3 GetEndEffectorPosition(float[] p_theta)
+    private MyVector3 GetEndEffectorPosition(float[] p_theta)
     {
-        Vector3 currentPos = rootJoint.position;
+        MyVector3 currentPos = rootJoint.position;
 
         for (int i = 0; i < joints.Count; i++)
         {
             int baseIdx = i * 3;
 
-            Vector3 localRotationDelta = new(
-                p_theta[baseIdx] * Mathf.Rad2Deg,
-                p_theta[baseIdx + 1] * Mathf.Rad2Deg,
-                p_theta[baseIdx + 2] * Mathf.Rad2Deg
-            );
+            float angleX = p_theta[baseIdx] * Mathf.Rad2Deg;
+            float angleY = p_theta[baseIdx + 1] * Mathf.Rad2Deg;
+            float angleZ = p_theta[baseIdx + 2] * Mathf.Rad2Deg;
 
-            Quaternion rotationDelta = Quaternion.Euler(localRotationDelta);
-            Vector3 rotatedDirection = rotationDelta * linkDirections[i];
+            MyQuaternion rotX = MyQuaternion.AngleAxis(angleX, Vector3.right);
+            MyQuaternion rotY = MyQuaternion.AngleAxis(angleY, Vector3.up);
+            MyQuaternion rotZ = MyQuaternion.AngleAxis(angleZ, Vector3.forward);
+            MyQuaternion rotationDelta = rotZ * rotY * rotX;
+            
+            MyVector3 rotatedDirection = rotationDelta * linkDirections[i];
 
-            currentPos += rotatedDirection * linkLengths[i];
+            currentPos = currentPos + rotatedDirection * linkLengths[i];
         }
 
         return currentPos;
@@ -209,33 +217,40 @@ public class IKGradient : MonoBehaviour
 
     private void ForwardKinematics()
     {
-        Vector3 currentPos = rootJoint.position;
+        MyVector3 currentPos = rootJoint.position;
 
         for (int i = 0; i < joints.Count; i++)
         {
             int baseIdx = i * 3;
 
-            Vector3 localRotationDelta = new(
-                angles[baseIdx] * Mathf.Rad2Deg,
-                angles[baseIdx + 1] * Mathf.Rad2Deg,
-                angles[baseIdx + 2] * Mathf.Rad2Deg
-            );
+            float angleX = angles[baseIdx] * Mathf.Rad2Deg;
+            float angleY = angles[baseIdx + 1] * Mathf.Rad2Deg;
+            float angleZ = angles[baseIdx + 2] * Mathf.Rad2Deg;
 
-            Quaternion rotationDelta = Quaternion.Euler(localRotationDelta);
-            Vector3 rotatedDirection = rotationDelta * linkDirections[i];
+            MyQuaternion rotX = MyQuaternion.AngleAxis(angleX, Vector3.right);
+            MyQuaternion rotY = MyQuaternion.AngleAxis(angleY, Vector3.up);
+            MyQuaternion rotZ = MyQuaternion.AngleAxis(angleZ, Vector3.forward);
+            MyQuaternion rotationDelta = rotZ * rotY * rotX;
+            
+            MyVector3 rotatedDirection = rotationDelta * linkDirections[i];
 
-            Vector3 nextPos = currentPos + rotatedDirection * linkLengths[i];
+            MyVector3 nextPos = currentPos + rotatedDirection * linkLengths[i];
 
-            // smooth position and rotation
-            joints[i].position = Vector3.Lerp(joints[i].position, nextPos, 0.2f);
+            // smooth position and rotation - convert to Unity for transform operations
+            Vector3 currentUnityPos = joints[i].position;
+            Vector3 targetUnityPos = nextPos;
+            joints[i].position = Vector3.Lerp(currentUnityPos, targetUnityPos, 0.2f);
             
             // rotation to look at previous joint
-            Vector3 targetLookPos = (i > 0) ? joints[i - 1].position : rootJoint.position;
-            Vector3 directionToPrev = (targetLookPos - joints[i].position).normalized;
+            MyVector3 targetLookPos = (i > 0) ? (MyVector3)joints[i - 1].position : (MyVector3)rootJoint.position;
+            MyVector3 jointPos = joints[i].position;
+            MyVector3 directionToPrev = (targetLookPos - jointPos).normalized;
             
-            if (directionToPrev.sqrMagnitude > 0.00001f) 
+            float sqrMag = directionToPrev.x * directionToPrev.x + directionToPrev.y * directionToPrev.y + directionToPrev.z * directionToPrev.z;
+            if (sqrMag > 0.00001f) 
             { 
-                Quaternion targetRotation = Quaternion.LookRotation(directionToPrev, Vector3.right) * Quaternion.Euler(0, -90, 0);
+                Vector3 unityDir = directionToPrev;
+                Quaternion targetRotation = Quaternion.LookRotation(unityDir, Vector3.right) * Quaternion.Euler(0, -90, 0);
                 joints[i].rotation = Quaternion.Lerp(joints[i].rotation, targetRotation, 0.15f);
             }
 

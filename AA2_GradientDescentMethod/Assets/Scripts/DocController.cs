@@ -27,31 +27,31 @@ public class DocController : MonoBehaviour
         // handle movement input with Camera orientation
         if (kb.wKey.isPressed)
         {
-            Vector3 forward = mainCamera.transform.forward;
+            MyVector3 forward = mainCamera.transform.forward;
             forward.y = 0; // keep movement horizontal
-            forward.Normalize();
-            newPosition += new MyVector3(forward.x, forward.y, forward.z) * movementSpeed * Time.deltaTime;
+            forward = forward.normalized;
+            newPosition = newPosition + forward * movementSpeed * Time.deltaTime;
         }
         if (kb.sKey.isPressed)
         {
-            Vector3 backward = -mainCamera.transform.forward;
-            backward.y = 0; // keep movement horizontal
-            backward.Normalize();
-            newPosition += new MyVector3(backward.x, backward.y, backward.z) * movementSpeed * Time.deltaTime;
+            MyVector3 backward = mainCamera.transform.forward;
+            backward = new MyVector3(-backward.x, 0, -backward.z);
+            backward = backward.normalized;
+            newPosition = newPosition + backward * movementSpeed * Time.deltaTime;
         }
         if (kb.aKey.isPressed)
         {
-            Vector3 left = -mainCamera.transform.right;
-            left.y = 0; // keep movement horizontal
-            left.Normalize();
-            newPosition += new MyVector3(left.x, left.y, left.z) * movementSpeed * Time.deltaTime;
+            MyVector3 left = mainCamera.transform.right;
+            left = new MyVector3(-left.x, 0, -left.z);
+            left = left.normalized;
+            newPosition = newPosition + left * movementSpeed * Time.deltaTime;
         }
         if (kb.dKey.isPressed)
         {
-            Vector3 right = mainCamera.transform.right;
+            MyVector3 right = mainCamera.transform.right;
             right.y = 0; // keep movement horizontal
-            right.Normalize();
-            newPosition += new MyVector3(right.x, right.y, right.z) * movementSpeed * Time.deltaTime;
+            right = right.normalized;
+            newPosition = newPosition + right * movementSpeed * Time.deltaTime;
         }
 
         // apply the final position after calculations
@@ -61,13 +61,16 @@ public class DocController : MonoBehaviour
     private void HandleRotation()
     {
         // rotate character towards movement direction
-        Vector3 desiredDirection = -mainCamera.transform.right;
-        desiredDirection.y = 0; // keep rotation horizontal
-        desiredDirection.Normalize();
+        MyVector3 desiredDirection = mainCamera.transform.right;
+        desiredDirection = new MyVector3(-desiredDirection.x, 0, -desiredDirection.z); // negate and keep horizontal
+        desiredDirection = desiredDirection.normalized;
 
-        if (desiredDirection.sqrMagnitude > 0.01f)
+        float sqrMag = desiredDirection.x * desiredDirection.x + desiredDirection.y * desiredDirection.y + desiredDirection.z * desiredDirection.z;
+        if (sqrMag > 0.01f)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(desiredDirection);
+            // convert to Unity for LookRotation and Slerp (these are complex operations)
+            Vector3 unityDir = desiredDirection;
+            Quaternion targetRotation = Quaternion.LookRotation(unityDir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 10f * Time.deltaTime);
         }
     }
