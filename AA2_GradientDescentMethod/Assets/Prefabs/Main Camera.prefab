@@ -151,5 +151,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_target: {fileID: 0}
-  distanceLimits: {x: 0.5, y: 10}
+  distanceLimits: {x: 5, y: 10}
   m_cameraLerp: 20

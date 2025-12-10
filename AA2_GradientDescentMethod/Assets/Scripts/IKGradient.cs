@@ -10,20 +10,24 @@ public class IKGradient : MonoBehaviour
     [SerializeField] private Transform target;
 
     [Header("Optimization Parameters")]
-    [SerializeField] private float alpha = 0.1f;
+    [SerializeField] private float alpha = 0.05f;
     [SerializeField] private float tolerance = 0.01f;
+    [SerializeField] private float smoothingFactor = 0.15f; // change smoothing
+    [SerializeField] private float gradientDamping = 0.8f;
+    
+    // rotation limits
+    private const float collisionPenalty = 2.0f;
+    private const float minDistanceBetweenJoints = 0.3f;
 
     private float costFunction;
-    private float[] angles; // [theta_x, theta_y, theta_z] x joint
-    private float[] linkLengths;
-    private Vector3[] linkDirections;
+    private float[] angles; // [theta_x, theta_y, theta_z] per joint
+    private float[] angleVelocities, previousGradient,linkLengths;
+    private Vector3[] linkDirections, initialPositions;
     private int totalDOF;
-
-    private Vector3[] initialPositions;
 
     private void Awake() { InitializeIK(); }
 
-    void InitializeIK()
+    private void InitializeIK()
     {
         if (joints.Count == 0)
         {
@@ -34,6 +38,8 @@ public class IKGradient : MonoBehaviour
         totalDOF = joints.Count * 3;
 
         angles = new float[totalDOF];
+        angleVelocities = new float[totalDOF];
+        previousGradient = new float[totalDOF];
         linkLengths = new float[joints.Count];
         linkDirections = new Vector3[joints.Count];
         initialPositions = new Vector3[joints.Count];
@@ -49,14 +55,17 @@ public class IKGradient : MonoBehaviour
             linkDirections[i] = linkVector.sqrMagnitude > 0.00001f ? linkVector.normalized : Vector3.right;
         }
 
-        for (int i = 0; i < totalDOF; i++) { angles[i] = 0f; }
+        for (int i = 0; i < totalDOF; i++) 
+        { 
+            angles[i] = 0f;
+            angleVelocities[i] = 0f;
+            previousGradient[i] = 0f;
+        }
 
         costFunction = CalculateCost(angles);
-
-        Debug.Log($"IK Initialized with {joints.Count} joints, total DOF: {totalDOF}");
     }
 
-    void Update()
+    private void Update()
     {
         if (joints.Count == 0 || target == null) { return; }
 
@@ -64,9 +73,13 @@ public class IKGradient : MonoBehaviour
         {
             float[] gradient = CalculateGradient();
 
-            // Gradient Method simple
+            // Apply gradient with smoothing and damping
             for (int i = 0; i < totalDOF; i++)
-                angles[i] -= alpha * gradient[i];
+            {
+                float deltaAngle = -alpha * gradient[i];
+                angleVelocities[i] = Mathf.Lerp(angleVelocities[i], deltaAngle, smoothingFactor);
+                angles[i] += angleVelocities[i] * gradientDamping;
+            }
 
             ForwardKinematics();
         }
@@ -78,21 +91,74 @@ public class IKGradient : MonoBehaviour
     // COST FUNCTION
     // ------------------------
 
-    float CalculateCost(float[] theta)
+    private float CalculateCost(float[] p_theta)
     {
-        Vector3 endEffectorPos = GetEndEffectorPosition(theta);
+        Vector3 endEffectorPos = GetEndEffectorPosition(p_theta);
         float distance = Vector3.Distance(endEffectorPos, target.position);
-        return distance * distance;
+        float positionCost = distance * distance;
+        
+        // penalize collisions between joints
+        float collisionCost = CalculateCollisionPenalty(p_theta);
+        
+        return positionCost + collisionPenalty * collisionCost;
+    }
+
+    private float CalculateCollisionPenalty(float[] p_theta)
+    {
+        float penalty = 0f;
+        Vector3[] jointPositions = GetJointPositions(p_theta);
+        
+        for (int i = 0; i < jointPositions.Length; i++)
+        {
+            for (int j = i + 2; j < jointPositions.Length; j++) // ignore adjacent joints
+            {
+                float dist = Vector3.Distance(jointPositions[i], jointPositions[j]);
+                
+                // exponential penalty: stronger the closer they are
+                if (dist < minDistanceBetweenJoints * 2f)
+                {
+                    float violation = minDistanceBetweenJoints - dist;
+                    penalty += violation * violation * violation; // cubic for more aggressiveness
+                }
+            }
+        }
+        
+        return penalty;
     }
 
     // ------------------------
     // IK GRADIENT CALCULATION
     // ------------------------
 
-    float[] CalculateGradient()
+    private Vector3[] GetJointPositions(float[] p_theta)
+    {
+        Vector3[] positions = new Vector3[joints.Count];
+        Vector3 currentPos = rootJoint.position;
+
+        for (int i = 0; i < joints.Count; i++)
+        {
+            int baseIdx = i * 3;
+
+            Vector3 localRotationDelta = new(
+                p_theta[baseIdx] * Mathf.Rad2Deg,
+                p_theta[baseIdx + 1] * Mathf.Rad2Deg,
+                p_theta[baseIdx + 2] * Mathf.Rad2Deg
+            );
+
+            Quaternion rotationDelta = Quaternion.Euler(localRotationDelta);
+            Vector3 rotatedDirection = rotationDelta * linkDirections[i];
+
+            currentPos += rotatedDirection * linkLengths[i];
+            positions[i] = currentPos;
+        }
+
+        return positions;
+    }
+
+    private float[] CalculateGradient()
     {
         float[] gradient = new float[totalDOF];
-        float step = 0.0001f;
+        float step = 0.001f;
 
         float baseCost = CalculateCost(angles);
 
@@ -103,6 +169,13 @@ public class IKGradient : MonoBehaviour
 
             float costPlus = CalculateCost(thetaPlus);
             gradient[i] = (costPlus - baseCost) / step;
+            
+            // clamp gradients to avoid abrupt changes
+            gradient[i] = Mathf.Clamp(gradient[i], -1f, 1f);
+            
+            // smooth with history for stability
+            gradient[i] = Mathf.Lerp(previousGradient[i], gradient[i], 0.6f);
+            previousGradient[i] = gradient[i];
         }
 
         return gradient;
@@ -112,7 +185,7 @@ public class IKGradient : MonoBehaviour
     // FORWARD KINEMATICS
     // ------------------------
 
-    Vector3 GetEndEffectorPosition(float[] p_theta)
+    private Vector3 GetEndEffectorPosition(float[] p_theta)
     {
         Vector3 currentPos = rootJoint.position;
 
@@ -135,7 +208,7 @@ public class IKGradient : MonoBehaviour
         return currentPos;
     }
 
-    void ForwardKinematics()
+    private void ForwardKinematics()
     {
         Vector3 currentPos = rootJoint.position;
 
@@ -154,25 +227,30 @@ public class IKGradient : MonoBehaviour
 
             Vector3 nextPos = currentPos + rotatedDirection * linkLengths[i];
 
-            joints[i].position = nextPos;
-            //joints[i].rotation = initialRotations[i] * rotationDelta;
-
-            // rotate joint towards previous joint
+            // smooth position and rotation
+            joints[i].position = Vector3.Lerp(joints[i].position, nextPos, 0.2f);
+            
+            // rotation to look at previous joint
             Vector3 targetLookPos = (i > 0) ? joints[i - 1].position : rootJoint.position;
             Vector3 directionToPrev = (targetLookPos - joints[i].position).normalized;
-            if (directionToPrev.sqrMagnitude > 0.00001f) { joints[i].rotation = Quaternion.LookRotation(directionToPrev, Vector3.right) * Quaternion.Euler(0, -90, 0); }
+            
+            if (directionToPrev.sqrMagnitude > 0.00001f) 
+            { 
+                Quaternion targetRotation = Quaternion.LookRotation(directionToPrev, Vector3.right) * Quaternion.Euler(0, -90, 0);
+                joints[i].rotation = Quaternion.Lerp(joints[i].rotation, targetRotation, 0.15f);
+            }
 
             currentPos = nextPos;
         }
 
-        endEffector.position = currentPos;
+        endEffector.position = Vector3.Lerp(endEffector.position, currentPos, 0.2f);
     }
 
     // ------------------------
     // GIZMOS
     // ------------------------
 
-    void OnDrawGizmos()
+    private void OnDrawGizmos()
     {
         if (joints.Count == 0 || rootJoint == null) { return; }
 

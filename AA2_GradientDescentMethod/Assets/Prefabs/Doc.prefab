@@ -256,37 +256,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: DocArm_3
       objectReference: {fileID: 0}
-    - target: {fileID: 3582770340452679595, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5498607933162030349, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
-      propertyPath: tolerance
-      value: 0.0001
-      objectReference: {fileID: 0}
-    - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 0.3
-      objectReference: {fileID: 0}
-    - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 0.3
-      objectReference: {fileID: 0}
-    - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 0.3
-      objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.5
       objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.5
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.3
+      value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalRotation.w
@@ -316,10 +296,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 25
       objectReference: {fileID: 0}
-    - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
-      propertyPath: m_ConstrainProportionsScale
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -342,21 +318,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: DocArm_2
       objectReference: {fileID: 0}
-    - target: {fileID: 5498607933162030349, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
-      propertyPath: tolerance
-      value: 0.0001
-      objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.5
       objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.5
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.4
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalRotation.w
@@ -408,10 +380,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: DocArm
       objectReference: {fileID: 0}
-    - target: {fileID: 5498607933162030349, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
-      propertyPath: tolerance
-      value: 0.0001
-      objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.5
@@ -422,7 +390,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.3
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalRotation.w
@@ -474,10 +442,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: DocArm_1
       objectReference: {fileID: 0}
-    - target: {fileID: 5498607933162030349, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
-      propertyPath: tolerance
-      value: 0.0001
-      objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.5
@@ -488,7 +452,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.3
+      value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 8069955516756303596, guid: d8aad0dff1418664ca1553c3414cf6e4, type: 3}
       propertyPath: m_LocalRotation.w

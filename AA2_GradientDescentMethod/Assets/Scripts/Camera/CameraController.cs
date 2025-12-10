@@ -6,7 +6,7 @@ public class CameraController : MonoBehaviour
     [SerializeField] private GameObject m_target;
 
     [Header("Movement")]
-    [SerializeField, Min(0)] private Vector2 distanceLimits = new(0.5f, 10f);
+    [SerializeField, Min(0)] private Vector2 distanceLimits = new(5f, 10f);
     [SerializeField, Min(0)] private float m_cameraLerp = 20f;
     private float m_targetDistance;
     private float rotationX, rotationY;
