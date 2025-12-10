@@ -6,7 +6,6 @@ public class IKGradient : MonoBehaviour
     [Header("Joint Configuration")]
     [SerializeField] private Transform rootJoint;
     [SerializeField] private List<Transform> joints = new();
-    [SerializeField] private Transform endEffector;
     [SerializeField] private Transform target;
 
     [Header("Optimization Parameters")]
@@ -48,7 +47,7 @@ public class IKGradient : MonoBehaviour
         for (int i = 0; i < joints.Count; i++)
         {
             Vector3 startPos = (i == 0) ? rootJoint.position : initialPositions[i - 1];
-            Vector3 endPos = (i < joints.Count - 1) ? initialPositions[i] : endEffector.position;
+            Vector3 endPos = initialPositions[i];
 
             Vector3 linkVector = endPos - startPos;
             linkLengths[i] = linkVector.magnitude;
@@ -73,7 +72,7 @@ public class IKGradient : MonoBehaviour
         {
             float[] gradient = CalculateGradient();
 
-            // Apply gradient with smoothing and damping
+            // apply gradient with smoothing and damping
             for (int i = 0; i < totalDOF; i++)
             {
                 float deltaAngle = -alpha * gradient[i];
@@ -242,8 +241,6 @@ public class IKGradient : MonoBehaviour
 
             currentPos = nextPos;
         }
-
-        endEffector.position = Vector3.Lerp(endEffector.position, currentPos, 0.2f);
     }
 
     // ------------------------
@@ -267,10 +264,11 @@ public class IKGradient : MonoBehaviour
             }
         }
 
-        if (endEffector != null)
+        // Draw last joint as end effector in green
+        if (joints.Count > 0 && joints[joints.Count - 1] != null)
         {
             Gizmos.color = Color.green;
-            Gizmos.DrawSphere(endEffector.position, 0.08f);
+            Gizmos.DrawSphere(joints[joints.Count - 1].position, 0.08f);
         }
 
         if (target != null)
