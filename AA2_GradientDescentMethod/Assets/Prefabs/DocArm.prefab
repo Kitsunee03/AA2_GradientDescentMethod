@@ -107,11 +107,11 @@ MonoBehaviour:
   - {fileID: 5802145452876977104}
   - {fileID: 8955525549945781069}
   - {fileID: 6682917987272956736}
-  target: {fileID: 0}
-  alpha: 0.1
+  targetCollider: {fileID: 0}
+  alpha: 0.08
   tolerance: 0.01
-  smoothingFactor: 0.15
-  gradientDamping: 0.8
+  smoothingFactor: 0.45
+  gradientDamping: 1.2
 --- !u!1 &6338163558568247802
 GameObject:
   m_ObjectHideFlags: 0
@@ -137,7 +137,7 @@ Transform:
   m_GameObject: {fileID: 6338163558568247802}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 15, y: 0, z: 0}
+  m_LocalPosition: {x: 17, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -445,6 +445,10 @@ PrefabInstance:
     - target: {fileID: 1814988683762233115, guid: 821ee54114d3c214a8e2b72ed388e95c, type: 3}
       propertyPath: m_Name
       value: ArmSegment_26
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937813156420984260, guid: 821ee54114d3c214a8e2b72ed388e95c, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1250,7 +1254,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1904700333962920644, guid: 23c2b7b1c0f70ac46ba5a87c8fe03947, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1904700333962920644, guid: 23c2b7b1c0f70ac46ba5a87c8fe03947, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1599,6 +1603,10 @@ PrefabInstance:
     - target: {fileID: 1814988683762233115, guid: 821ee54114d3c214a8e2b72ed388e95c, type: 3}
       propertyPath: m_Name
       value: ArmSegment_27
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937813156420984260, guid: 821ee54114d3c214a8e2b72ed388e95c, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2519,6 +2527,10 @@ PrefabInstance:
     - target: {fileID: 1814988683762233115, guid: 821ee54114d3c214a8e2b72ed388e95c, type: 3}
       propertyPath: m_Name
       value: ArmSegment_28
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937813156420984260, guid: 821ee54114d3c214a8e2b72ed388e95c, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

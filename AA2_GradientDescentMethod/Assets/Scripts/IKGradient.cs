@@ -6,21 +6,22 @@ public class IKGradient : MonoBehaviour
     [Header("Joint Configuration")]
     [SerializeField] private Transform rootJoint;
     [SerializeField] private List<Transform> joints = new();
-    [SerializeField] private Transform target;
+    [SerializeField] private Collider targetCollider;
+    private MyVector3 targetPoint;
 
     [Header("Optimization Parameters")]
-    [SerializeField] private float alpha = 0.05f;
+    [SerializeField] private float alpha = 0.08f;
     [SerializeField] private float tolerance = 0.01f;
-    [SerializeField] private float smoothingFactor = 0.15f; // change smoothing
-    [SerializeField] private float gradientDamping = 0.8f;
-    
+    [SerializeField] private float smoothingFactor = 0.45f;
+    [SerializeField] private float gradientDamping = 1.2f;
+
     // rotation limits
     private const float collisionPenalty = 2.0f;
     private const float minDistanceBetweenJoints = 0.3f;
 
     private float costFunction;
     private float[] angles; // [theta_x, theta_y, theta_z] per joint
-    private float[] angleVelocities, previousGradient,linkLengths;
+    private float[] angleVelocities, previousGradient, linkLengths;
     private MyVector3[] linkDirections, initialPositions;
     private int totalDOF;
 
@@ -55,8 +56,8 @@ public class IKGradient : MonoBehaviour
             linkDirections[i] = sqrMag > 0.00001f ? linkVector.normalized : MyVector3.right;
         }
 
-        for (int i = 0; i < totalDOF; i++) 
-        { 
+        for (int i = 0; i < totalDOF; i++)
+        {
             angles[i] = 0f;
             angleVelocities[i] = 0f;
             previousGradient[i] = 0f;
@@ -67,7 +68,7 @@ public class IKGradient : MonoBehaviour
 
     private void Update()
     {
-        if (joints.Count == 0 || target == null) { return; }
+        if (joints.Count == 0 || targetPoint == null) { return; }
 
         if (costFunction > tolerance)
         {
@@ -77,7 +78,7 @@ public class IKGradient : MonoBehaviour
             for (int i = 0; i < totalDOF; i++)
             {
                 float deltaAngle = -alpha * gradient[i];
-                angleVelocities[i] = Mathf.Lerp(angleVelocities[i], deltaAngle, smoothingFactor);
+                angleVelocities[i] = angleVelocities[i] * (1f - smoothingFactor) + deltaAngle * smoothingFactor;
                 angles[i] += angleVelocities[i] * gradientDamping;
             }
 
@@ -94,14 +95,17 @@ public class IKGradient : MonoBehaviour
     private float CalculateCost(float[] p_theta)
     {
         MyVector3 endEffectorPos = GetEndEffectorPosition(p_theta);
-        MyVector3 targetPos = target.position;
-        MyVector3 diff = endEffectorPos - targetPos;
+        
+        // target point on collider
+        targetPoint = targetCollider.ClosestPoint(joints[0].position);
+        MyVector3 diff = endEffectorPos - targetPoint;
+
         float distance = Mathf.Sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
         float positionCost = distance * distance;
-        
+
         // penalize collisions between joints
         float collisionCost = CalculateCollisionPenalty(p_theta);
-        
+
         return positionCost + collisionPenalty * collisionCost;
     }
 
@@ -109,24 +113,37 @@ public class IKGradient : MonoBehaviour
     {
         float penalty = 0f;
         MyVector3[] jointPositions = GetJointPositions(p_theta);
-        
+
+        float warningRadius = minDistanceBetweenJoints * 0.75f;
+        float hardLimit = minDistanceBetweenJoints * 0.55f;
+
         for (int i = 0; i < jointPositions.Length; i++)
         {
-            for (int j = i + 2; j < jointPositions.Length; j++) // ignore adjacent joints
+            for (int j = i + 2; j < jointPositions.Length; j++)
             {
                 MyVector3 diff = jointPositions[i] - jointPositions[j];
                 float dist = Mathf.Sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
-                
-                // exponential penalty: stronger the closer they are
-                if (dist < minDistanceBetweenJoints * 2f)
+
+                // safe zone: no penalty
+                if (dist >= warningRadius) { continue; }
+
+                //  intermediate zone: soft penalty
+                if (dist >= hardLimit)
                 {
-                    float violation = minDistanceBetweenJoints - dist;
-                    penalty += violation * violation * violation; // cubic for more aggressiveness
+                    float t = (warningRadius - dist) / (warningRadius - hardLimit);
+                    float softPenalty = t * t * 0.15f;  // suave, no interfiere
+                    penalty += softPenalty;
+                    continue;
                 }
+
+                // critical zone: strong penalty
+                float violation = Mathf.Max(0f, hardLimit - dist);
+                penalty += violation * violation * 1.6f;
             }
         }
-        
-        return penalty;
+
+        // clamp maximum penalty to avoid extreme values
+        return Mathf.Min(penalty, 4f);
     }
 
     // ------------------------
@@ -150,7 +167,7 @@ public class IKGradient : MonoBehaviour
             MyQuaternion rotY = MyQuaternion.AngleAxis(angleY, Vector3.up);
             MyQuaternion rotZ = MyQuaternion.AngleAxis(angleZ, Vector3.forward);
             MyQuaternion rotationDelta = rotZ * rotY * rotX;
-            
+
             MyVector3 rotatedDirection = rotationDelta * linkDirections[i];
 
             currentPos = currentPos + rotatedDirection * linkLengths[i];
@@ -174,10 +191,10 @@ public class IKGradient : MonoBehaviour
 
             float costPlus = CalculateCost(thetaPlus);
             gradient[i] = (costPlus - baseCost) / step;
-            
+
             // clamp gradients to avoid abrupt changes
             gradient[i] = Mathf.Clamp(gradient[i], -1f, 1f);
-            
+
             // smooth with history for stability
             gradient[i] = Mathf.Lerp(previousGradient[i], gradient[i], 0.6f);
             previousGradient[i] = gradient[i];
@@ -206,7 +223,7 @@ public class IKGradient : MonoBehaviour
             MyQuaternion rotY = MyQuaternion.AngleAxis(angleY, Vector3.up);
             MyQuaternion rotZ = MyQuaternion.AngleAxis(angleZ, Vector3.forward);
             MyQuaternion rotationDelta = rotZ * rotY * rotX;
-            
+
             MyVector3 rotatedDirection = rotationDelta * linkDirections[i];
 
             currentPos = currentPos + rotatedDirection * linkLengths[i];
@@ -231,7 +248,7 @@ public class IKGradient : MonoBehaviour
             MyQuaternion rotY = MyQuaternion.AngleAxis(angleY, Vector3.up);
             MyQuaternion rotZ = MyQuaternion.AngleAxis(angleZ, Vector3.forward);
             MyQuaternion rotationDelta = rotZ * rotY * rotX;
-            
+
             MyVector3 rotatedDirection = rotationDelta * linkDirections[i];
 
             MyVector3 nextPos = currentPos + rotatedDirection * linkLengths[i];
@@ -240,15 +257,15 @@ public class IKGradient : MonoBehaviour
             Vector3 currentUnityPos = joints[i].position;
             Vector3 targetUnityPos = nextPos;
             joints[i].position = Vector3.Lerp(currentUnityPos, targetUnityPos, 0.2f);
-            
+
             // rotation to look at previous joint
             MyVector3 targetLookPos = (i > 0) ? (MyVector3)joints[i - 1].position : (MyVector3)rootJoint.position;
             MyVector3 jointPos = joints[i].position;
             MyVector3 directionToPrev = (targetLookPos - jointPos).normalized;
-            
+
             float sqrMag = directionToPrev.x * directionToPrev.x + directionToPrev.y * directionToPrev.y + directionToPrev.z * directionToPrev.z;
-            if (sqrMag > 0.00001f) 
-            { 
+            if (sqrMag > 0.00001f)
+            {
                 Vector3 unityDir = directionToPrev;
                 Quaternion targetRotation = Quaternion.LookRotation(unityDir, Vector3.right) * Quaternion.Euler(0, -90, 0);
                 joints[i].rotation = Quaternion.Lerp(joints[i].rotation, targetRotation, 0.15f);
@@ -286,10 +303,10 @@ public class IKGradient : MonoBehaviour
             Gizmos.DrawSphere(joints[joints.Count - 1].position, 0.08f);
         }
 
-        if (target != null)
+        if (targetPoint != null)
         {
             Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(target.position, 0.1f);
+            Gizmos.DrawWireSphere(targetPoint, 0.5f);
         }
     }
 }
