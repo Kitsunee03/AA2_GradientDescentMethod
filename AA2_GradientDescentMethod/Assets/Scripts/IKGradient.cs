@@ -3,10 +3,13 @@ using System.Collections.Generic;
 
 public class IKGradient : MonoBehaviour
 {
+    private bool isInUse = false;
+
     [Header("Joint Configuration")]
     [SerializeField] private Transform rootJoint;
     [SerializeField] private List<Transform> joints = new();
     [SerializeField] private Collider targetCollider;
+    [SerializeField] private Transform idleTarget;
     private MyVector3 targetPoint;
 
     [Header("Optimization Parameters")]
@@ -95,9 +98,11 @@ public class IKGradient : MonoBehaviour
     private float CalculateCost(float[] p_theta)
     {
         MyVector3 endEffectorPos = GetEndEffectorPosition(p_theta);
-        
-        // target point on collider
-        targetPoint = targetCollider.ClosestPoint(joints[0].position);
+
+        // target point
+        if (isInUse) { targetPoint = targetCollider.ClosestPoint(joints[0].position); }
+        else { targetPoint = idleTarget.position; }
+
         MyVector3 diff = endEffectorPos - targetPoint;
 
         float distance = Mathf.Sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
@@ -274,6 +279,13 @@ public class IKGradient : MonoBehaviour
             currentPos = nextPos;
         }
     }
+
+    public float GetDistanceToTarget()
+    {
+        return MyVector3.Distance(joints[joints.Count - 1].position, targetCollider.ClosestPoint(joints[0].position));
+    }
+
+    public bool IsInUse { get { return isInUse; } set { isInUse = value; } }
 
     // ------------------------
     // GIZMOS
