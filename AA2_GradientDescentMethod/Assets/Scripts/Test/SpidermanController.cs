@@ -7,12 +7,14 @@ public class SpiderManController : MonoBehaviour
     
     [Header("Plane Bounds")]
     [SerializeField] private Collider planeBounds;
-    [SerializeField] private float planeYOffset = 0.5f;
     
     [Header("Random Movement")]
     [SerializeField] private float changeDirectionInterval = 2f;
     [SerializeField] private Vector2 movementAreaMin = new Vector2(-10, -10);
     [SerializeField] private Vector2 movementAreaMax = new Vector2(10, 10);
+    [Header("Model Orientation")]
+    [Tooltip("Compensa si el modelo apunta hacia -Z (usa 180) o no (0).")]
+    [SerializeField] private float modelForwardAngle = 0f;
     
     private Rigidbody rb;
     private MyVector3 randomDirection;
@@ -67,6 +69,8 @@ public class SpiderManController : MonoBehaviour
 
         // guardar la dirección real del movimiento antes de mover (para rotación)
         Vector3 moveDir = desiredPos - transform.position;
+        // proyectar en XZ para evitar tilts por diferencias en Y
+        moveDir.y = 0f;
 
         // mover respetando Rigidbody
         if (rb != null)
@@ -74,9 +78,17 @@ public class SpiderManController : MonoBehaviour
         else
             transform.position = desiredPos;
         
-        // rotar hacia la dirección real del movimiento
-        if (moveDir.magnitude > 0.01f)
-            transform.forward = Vector3.Lerp(transform.forward, moveDir.normalized, Time.deltaTime * 5f);
+        // rotar hacia la dirección real del movimiento usando LookRotation + offset
+        if (moveDir.sqrMagnitude > 1e-6f)
+        {
+            Quaternion targetRot = Quaternion.LookRotation(moveDir.normalized, Vector3.up)
+                                   * Quaternion.Euler(0f, modelForwardAngle, 0f);
+            // suavizar rotación
+            if (rb != null)
+                rb.MoveRotation(Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 5f));
+            else
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 5f);
+        }
     }
 
     void ChooseRandomDirection()
