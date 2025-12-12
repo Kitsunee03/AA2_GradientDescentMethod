@@ -1,20 +1,29 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class DocController : MonoBehaviour
 {
     [SerializeField] private Camera mainCamera;
+    [SerializeField] private List<IKGradient> arms;
+    private IKGradient activeArm;
 
     [Header("Movement Settings")]
     [SerializeField] private float movementSpeed = 5f;
     private Keyboard kb;
 
-    private void Awake() { kb = Keyboard.current; }
+    private void Awake()
+    {
+        kb = Keyboard.current;
+        HandleActiveArm();
+    }
 
     private void Update()
     {
         HandleMovement();
         HandleRotation();
+        
+        HandleActiveArm();
     }
 
     private void HandleMovement()
@@ -72,6 +81,23 @@ public class DocController : MonoBehaviour
             Vector3 unityDir = desiredDirection;
             Quaternion targetRotation = Quaternion.LookRotation(unityDir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 10f * Time.deltaTime);
+        }
+    }
+
+    private void HandleActiveArm()
+    {
+        if (activeArm == null) { activeArm = arms[0]; }
+        float activeDistance = activeArm.GetDistanceToTarget();
+
+        foreach (IKGradient arm in arms)
+        {
+            if(arm.GetDistanceToTarget() < activeDistance)
+            {
+                activeArm.IsInUse = false;
+                activeArm = arm;
+                activeArm.IsInUse = true;
+                activeDistance = arm.GetDistanceToTarget();
+            }
         }
     }
 }

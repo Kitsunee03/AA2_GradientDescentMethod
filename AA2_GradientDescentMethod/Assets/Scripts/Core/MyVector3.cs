@@ -18,6 +18,12 @@ public class MyVector3
     public static MyVector3 up { get { return new(0, 1, 0); } }
     public static MyVector3 zero { get { return new(0, 0, 0); } }
 
+    public static float Distance(MyVector3 p_a, MyVector3 p_b)
+    {
+        MyVector3 diff = p_a - p_b;
+        return Mathf.Sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
+    }
+
     // complex vector operations
     public MyVector3 normalized
     {
