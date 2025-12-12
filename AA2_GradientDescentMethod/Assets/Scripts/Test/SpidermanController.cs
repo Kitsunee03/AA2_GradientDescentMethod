@@ -10,20 +10,14 @@ public class SpiderManController : MonoBehaviour
     [SerializeField] private float planeYOffset = 0.5f;
     
     [Header("Random Movement")]
-    [SerializeField] private bool randomMovement = true;
     [SerializeField] private float changeDirectionInterval = 2f;
     [SerializeField] private Vector2 movementAreaMin = new Vector2(-10, -10);
     [SerializeField] private Vector2 movementAreaMax = new Vector2(10, 10);
     
-    [Header("Predefined Path")]
-    [SerializeField] private bool followPath = false;
-    [SerializeField] private Transform[] pathPoints;
-    [SerializeField] private int currentPathIndex = 0;
-    
     private Rigidbody rb;
-    private Vector3 randomDirection;
+    private MyVector3 randomDirection;
     private float directionTimer;
-    
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -32,23 +26,16 @@ public class SpiderManController : MonoBehaviour
             rb = gameObject.AddComponent<Rigidbody>();
         }
         
-        rb.useGravity = true;
+        rb.useGravity = false;
         rb.constraints = RigidbodyConstraints.FreezeRotation;
         
         ChooseRandomDirection();
+        directionTimer = changeDirectionInterval;
     }
 
     void Update()
     {
-        if (followPath && pathPoints != null && pathPoints.Length > 0)
-        {
-            FollowPredefinedPath();
-        }
-        else if (randomMovement)
-        {
-            RandomMovement();
-        }
-        
+        RandomMovement();
     }
 
     void RandomMovement()
@@ -60,72 +47,47 @@ public class SpiderManController : MonoBehaviour
             ChooseRandomDirection();
             directionTimer = changeDirectionInterval;
         }
-        
-        // Move in random direction
-        Vector3 movement = randomDirection * moveSpeed * Time.deltaTime;
-        transform.position += movement;
-        
-        // Keep within bounds
-        ClampToBounds();
-        
-        // Face movement direction
-        if (randomDirection.magnitude > 0.01f)
+
+        // movimiento deseado en world space (MyVector3 -> Vector3)
+        Vector3 desiredMovement = (Vector3)randomDirection * moveSpeed * Time.deltaTime;
+        Vector3 desiredPos = transform.position + desiredMovement;
+
+        // obtener posición final limitada por el collider (ClosestPoint)
+        if (planeBounds != null)
         {
-            transform.forward = Vector3.Lerp(transform.forward, randomDirection, Time.deltaTime * 5f);
+            Vector3 surfacePoint = planeBounds.ClosestPoint(desiredPos);
+            desiredPos = new Vector3(surfacePoint.x, surfacePoint.y, surfacePoint.z);
         }
+        else
+        {
+            desiredPos.x = Mathf.Clamp(desiredPos.x, movementAreaMin.x, movementAreaMax.x);
+            desiredPos.z = Mathf.Clamp(desiredPos.z, movementAreaMin.y, movementAreaMax.y);
+            desiredPos.y = Mathf.Max(desiredPos.y, 0.5f);
+        }
+
+        // guardar la dirección real del movimiento antes de mover (para rotación)
+        Vector3 moveDir = desiredPos - transform.position;
+
+        // mover respetando Rigidbody
+        if (rb != null)
+            rb.MovePosition(desiredPos);
+        else
+            transform.position = desiredPos;
+        
+        // rotar hacia la dirección real del movimiento
+        if (moveDir.magnitude > 0.01f)
+            transform.forward = Vector3.Lerp(transform.forward, moveDir.normalized, Time.deltaTime * 5f);
     }
 
     void ChooseRandomDirection()
     {
-        // Solo 4 direcciones cardinales
-        int direction = Random.Range(0, 4);
+        int direction = Random.Range(0, 3); // 0..2
         randomDirection = direction switch
         {
-            0 => new Vector3(1, 0, 0),  
-            1 => new Vector3(-1, 0, 0),  
-            2 => new Vector3(0, 0, 1),   
-            3 => new Vector3(0, 0, -1),  
-            _ => new Vector3(1, 0, 0)
+            0 => MyVector3.right,
+            1 => MyVector3.left,
+            2 => MyVector3.forward,
+            _ => MyVector3.right
         };
-    }
-
-    void FollowPredefinedPath()
-    {
-        if (pathPoints.Length == 0) return;
-        
-        Transform targetPoint = pathPoints[currentPathIndex];
-        Vector3 direction = (targetPoint.position - transform.position).normalized;
-        
-        transform.position += direction * moveSpeed * Time.deltaTime;
-        transform.forward = Vector3.Lerp(transform.forward, direction, Time.deltaTime * 5f);
-        
-        // Check if reached point
-        if (Vector3.Distance(transform.position, targetPoint.position) < 1f)
-        {
-            currentPathIndex = (currentPathIndex + 1) % pathPoints.Length;
-        }
-    }
-
-    void ClampToBounds()
-    {
-        Vector3 pos = transform.position;
-        
-        if (planeBounds != null)
-        {
-            // Usar los bounds del plano
-            Bounds bounds = planeBounds.bounds;
-            pos.x = Mathf.Clamp(pos.x, bounds.min.x, bounds.max.x);
-            pos.z = Mathf.Clamp(pos.z, bounds.min.z, bounds.max.z);
-            pos.y = bounds.center.y + planeYOffset; // Mantener la altura del plano + offset
-        }
-        else
-        {
-            // Usar los valores del inspector como fallback
-            pos.x = Mathf.Clamp(pos.x, movementAreaMin.x, movementAreaMax.x);
-            pos.z = Mathf.Clamp(pos.z, movementAreaMin.y, movementAreaMax.y);
-            pos.y = Mathf.Max(pos.y, 0.5f); // Keep above ground
-        }
-        
-        transform.position = pos;
     }
 }

@@ -241,6 +241,14 @@ PrefabInstance:
       value: SpiderMan
       objectReference: {fileID: 0}
     - target: {fileID: 8144526441271778298, guid: 435ca71e94246d64186622298c564e2a, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8144526441271778298, guid: 435ca71e94246d64186622298c564e2a, type: 3}
+      propertyPath: planeBounds
+      value: 
+      objectReference: {fileID: 636005032}
+    - target: {fileID: 8144526441271778298, guid: 435ca71e94246d64186622298c564e2a, type: 3}
       propertyPath: planeYOffset
       value: 0
       objectReference: {fileID: 0}
@@ -993,7 +1001,7 @@ PrefabInstance:
     - target: {fileID: 4284001396087978286, guid: 9e9510f7d5757a5438ce6705132e3527, type: 3}
       propertyPath: m_target
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1108243698}
     - target: {fileID: 4783363745629569824, guid: 9e9510f7d5757a5438ce6705132e3527, type: 3}
       propertyPath: m_Name
       value: Main Camera

@@ -30,6 +30,12 @@ public class MyVector3
         }
     }
 
+    // magnitude (longitud) del vector
+    public float magnitude
+    {
+        get { return Mathf.Sqrt(x * x + y * y + z * z); }
+    }
+
     // basic vector operations
     public static MyVector3 operator +(MyVector3 p_a, MyVector3 p_b)
     {
