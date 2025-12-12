@@ -41,15 +41,16 @@ public class SpiderManController : MonoBehaviour
             directionTimer = changeDirectionInterval;
         }
 
-        // movimiento deseado en world space (MyVector3 -> Vector3)
-        Vector3 desiredMovement = (Vector3)randomDirection * moveSpeed * Time.deltaTime;
-        Vector3 desiredPos = transform.position + desiredMovement;
+        // movimiento deseado en world space usando MyVector3
+        MyVector3 desiredMovement = randomDirection * moveSpeed * Time.deltaTime;
+        MyVector3 desiredPos = (MyVector3)transform.position + desiredMovement;
 
         // obtener posición final limitada por el collider (ClosestPoint)
         if (planeBounds != null)
         {
-            Vector3 surfacePoint = planeBounds.ClosestPoint(desiredPos);
-            desiredPos = new(surfacePoint.x, surfacePoint.y, surfacePoint.z);
+            // ClosestPoint requiere Vector3, convertimos y volvemos a MyVector3
+            Vector3 surfacePoint = planeBounds.ClosestPoint((Vector3)desiredPos);
+            desiredPos = new MyVector3(surfacePoint.x, surfacePoint.y, surfacePoint.z);
         }
         else
         {
@@ -59,19 +60,21 @@ public class SpiderManController : MonoBehaviour
         }
 
         // guardar la dirección real del movimiento antes de mover (para rotación)
-        Vector3 moveDir = desiredPos - transform.position;
+        MyVector3 moveDir = desiredPos - (MyVector3)transform.position;
         // proyectar en XZ para evitar tilts por diferencias en Y
         moveDir.y = 0f;
 
         // mover respetando Rigidbody
-        if (rb != null) { rb.MovePosition(desiredPos); }
-        else { transform.position = desiredPos; }
+        if (rb != null) { rb.MovePosition((Vector3)desiredPos); }
+        else { transform.position = (Vector3)desiredPos; }
 
         // rotar hacia la dirección real del movimiento usando LookRotation + offset
-        if (moveDir.sqrMagnitude > 1e-6f)
+        // calcular magnitud cuadrada manualmente para MyVector3
+        float moveDirSqrMag = moveDir.x * moveDir.x + moveDir.y * moveDir.y + moveDir.z * moveDir.z;
+        if (moveDirSqrMag > 1e-6f)
         {
-            Quaternion targetRot = Quaternion.LookRotation(moveDir.normalized, Vector3.up)
-                                   * Quaternion.Euler(0f, 0f, 0f);
+            Vector3 unityDir = (Vector3)moveDir.normalized;
+            Quaternion targetRot = Quaternion.LookRotation(unityDir, Vector3.up);
             // suavizar rotación
             if (rb != null) { rb.MoveRotation(Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 5f)); }
             else { transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 5f); }
