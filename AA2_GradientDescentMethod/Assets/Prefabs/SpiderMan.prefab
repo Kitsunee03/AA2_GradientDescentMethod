@@ -42,7 +42,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4747627175319533143}
-  m_Mesh: {fileID: -2432090755550338912, guid: 5cb9c84d6a0d17f47bc0e6cfb8bca374, type: 3}
+  m_Mesh: {fileID: -5061386510625737810, guid: 0c3f07fad9567bf419e067c56a4ab8f1, type: 3}
 --- !u!23 &3136206472333556675
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -66,7 +66,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 0f5c1de2ad0989044919da13e4093235, type: 2}
+  - {fileID: 2100000, guid: eddbb041634641d48a1a8b163dba8e42, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -103,14 +103,14 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 2
+  m_Radius: 0.3
+  m_Height: 3.5
   m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0, y: 2, z: 0}
 --- !u!114 &8144526441271778298
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -125,11 +125,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 5
   planeBounds: {fileID: 0}
-  planeYOffset: 2
-  randomMovement: 1
+  planeYOffset: 0
   changeDirectionInterval: 2
   movementAreaMin: {x: -10, y: -10}
   movementAreaMax: {x: 10, y: 10}
-  followPath: 0
-  pathPoints: []
-  currentPathIndex: 0

@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 
 public class DocController : MonoBehaviour
 {
-    [SerializeField] private Camera mainCamera;
+    private Camera mainCamera;
     [SerializeField] private List<IKGradient> arms;
     private IKGradient activeArm;
 
@@ -14,6 +14,7 @@ public class DocController : MonoBehaviour
 
     private void Awake()
     {
+        mainCamera = Camera.main;
         kb = Keyboard.current;
         HandleActiveArm();
     }
@@ -22,7 +23,7 @@ public class DocController : MonoBehaviour
     {
         HandleMovement();
         HandleRotation();
-        
+
         HandleActiveArm();
     }
 
@@ -70,7 +71,7 @@ public class DocController : MonoBehaviour
     private void HandleRotation()
     {
         // rotate character towards movement direction
-        MyVector3 desiredDirection = mainCamera.transform.right;
+        MyVector3 desiredDirection = -mainCamera.transform.forward;
         desiredDirection = new MyVector3(-desiredDirection.x, 0, -desiredDirection.z); // negate and keep horizontal
         desiredDirection = desiredDirection.normalized;
 
