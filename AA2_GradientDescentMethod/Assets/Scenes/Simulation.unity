@@ -172,9 +172,33 @@ PrefabInstance:
       value: SpiderMan
       objectReference: {fileID: 0}
     - target: {fileID: 8144526441271778298, guid: 435ca71e94246d64186622298c564e2a, type: 3}
+      propertyPath: moveSpeed
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 8144526441271778298, guid: 435ca71e94246d64186622298c564e2a, type: 3}
       propertyPath: planeBounds
       value: 
       objectReference: {fileID: 636005032}
+    - target: {fileID: 8144526441271778298, guid: 435ca71e94246d64186622298c564e2a, type: 3}
+      propertyPath: movementAreaMax.x
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8144526441271778298, guid: 435ca71e94246d64186622298c564e2a, type: 3}
+      propertyPath: movementAreaMax.y
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8144526441271778298, guid: 435ca71e94246d64186622298c564e2a, type: 3}
+      propertyPath: movementAreaMin.x
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8144526441271778298, guid: 435ca71e94246d64186622298c564e2a, type: 3}
+      propertyPath: movementAreaMin.y
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8144526441271778298, guid: 435ca71e94246d64186622298c564e2a, type: 3}
+      propertyPath: changeDirectionInterval
+      value: 5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -194,6 +218,11 @@ Transform:
 Transform:
   m_CorrespondingSourceObject: {fileID: 9069554265586877323, guid: 9e9510f7d5757a5438ce6705132e3527, type: 3}
   m_PrefabInstance: {fileID: 4570988331799407462}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &344698592 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4715818650361946580, guid: c4e6807abadf7034ca80376f9f4a3d4b, type: 3}
+  m_PrefabInstance: {fileID: 1411920814}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &410087039
 GameObject:
@@ -585,11 +614,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1935929618751795657, guid: c4e6807abadf7034ca80376f9f4a3d4b, type: 3}
   m_PrefabInstance: {fileID: 1411920814}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1411920816 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8710766772284414524, guid: c4e6807abadf7034ca80376f9f4a3d4b, type: 3}
-  m_PrefabInstance: {fileID: 1411920814}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1474485584
 GameObject:
   m_ObjectHideFlags: 0
@@ -633,7 +657,7 @@ PrefabInstance:
     - target: {fileID: 4284001396087978286, guid: 9e9510f7d5757a5438ce6705132e3527, type: 3}
       propertyPath: m_target
       value: 
-      objectReference: {fileID: 1411920816}
+      objectReference: {fileID: 344698592}
     - target: {fileID: 4783363745629569824, guid: 9e9510f7d5757a5438ce6705132e3527, type: 3}
       propertyPath: m_Name
       value: Main Camera

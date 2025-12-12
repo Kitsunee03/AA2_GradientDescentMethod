@@ -4,46 +4,37 @@ public class SpiderManController : MonoBehaviour
 {
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 5f;
-    
+
     [Header("Plane Bounds")]
     [SerializeField] private Collider planeBounds;
-    
+
     [Header("Random Movement")]
     [SerializeField] private float changeDirectionInterval = 2f;
-    [SerializeField] private Vector2 movementAreaMin = new Vector2(-10, -10);
-    [SerializeField] private Vector2 movementAreaMax = new Vector2(10, 10);
-    [Header("Model Orientation")]
-    [Tooltip("Compensa si el modelo apunta hacia -Z (usa 180) o no (0).")]
-    [SerializeField] private float modelForwardAngle = 0f;
-    
+    [SerializeField] private Vector2 movementAreaMin = new(-10, -10);
+    [SerializeField] private Vector2 movementAreaMax = new(10, 10);
+
     private Rigidbody rb;
     private MyVector3 randomDirection;
     private float directionTimer;
 
-    void Start()
+    private void Start()
     {
-        rb = GetComponent<Rigidbody>();
-        if (rb == null)
-        {
-            rb = gameObject.AddComponent<Rigidbody>();
-        }
-        
+        TryGetComponent(out rb);
+        if (rb == null) { rb = gameObject.AddComponent<Rigidbody>(); }
+
         rb.useGravity = false;
         rb.constraints = RigidbodyConstraints.FreezeRotation;
-        
+
         ChooseRandomDirection();
         directionTimer = changeDirectionInterval;
     }
 
-    void Update()
-    {
-        RandomMovement();
-    }
+    private void Update() { RandomMovement(); }
 
-    void RandomMovement()
+    private void RandomMovement()
     {
         directionTimer -= Time.deltaTime;
-        
+
         if (directionTimer <= 0)
         {
             ChooseRandomDirection();
@@ -58,7 +49,7 @@ public class SpiderManController : MonoBehaviour
         if (planeBounds != null)
         {
             Vector3 surfacePoint = planeBounds.ClosestPoint(desiredPos);
-            desiredPos = new Vector3(surfacePoint.x, surfacePoint.y, surfacePoint.z);
+            desiredPos = new(surfacePoint.x, surfacePoint.y, surfacePoint.z);
         }
         else
         {
@@ -73,21 +64,17 @@ public class SpiderManController : MonoBehaviour
         moveDir.y = 0f;
 
         // mover respetando Rigidbody
-        if (rb != null)
-            rb.MovePosition(desiredPos);
-        else
-            transform.position = desiredPos;
-        
+        if (rb != null) { rb.MovePosition(desiredPos); }
+        else { transform.position = desiredPos; }
+
         // rotar hacia la dirección real del movimiento usando LookRotation + offset
         if (moveDir.sqrMagnitude > 1e-6f)
         {
             Quaternion targetRot = Quaternion.LookRotation(moveDir.normalized, Vector3.up)
-                                   * Quaternion.Euler(0f, modelForwardAngle, 0f);
+                                   * Quaternion.Euler(0f, 0f, 0f);
             // suavizar rotación
-            if (rb != null)
-                rb.MoveRotation(Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 5f));
-            else
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 5f);
+            if (rb != null) { rb.MoveRotation(Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 5f)); }
+            else { transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 5f); }
         }
     }
 

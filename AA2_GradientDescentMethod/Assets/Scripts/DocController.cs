@@ -87,12 +87,18 @@ public class DocController : MonoBehaviour
 
     private void HandleActiveArm()
     {
-        if (activeArm == null) { activeArm = arms[0]; }
-        float activeDistance = activeArm.GetDistanceToTarget();
+        float activeDistance = float.MaxValue;
 
         foreach (IKGradient arm in arms)
         {
-            if(arm.GetDistanceToTarget() < activeDistance)
+            if (activeArm == null)
+            {
+                activeArm = arm;
+                activeDistance = activeArm.GetDistanceToTarget();
+                continue;
+            }
+
+            if (arm.GetDistanceToTarget() < activeDistance)
             {
                 activeArm.IsInUse = false;
                 activeArm = arm;
