@@ -24,7 +24,7 @@ public class MyVector3
         return Mathf.Sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
     }
 
-    // complex vector operations
+    // Complex vector operations
     public MyVector3 normalized
     {
         get
@@ -36,13 +36,13 @@ public class MyVector3
         }
     }
 
-    // magnitude (longitud) del vector
+    // Magnitude (longitud) del vector
     public float magnitude
     {
         get { return Mathf.Sqrt(x * x + y * y + z * z); }
     }
 
-    // basic vector operations
+    // Basic vector operations
     public static MyVector3 operator +(MyVector3 p_a, MyVector3 p_b)
     {
         return new(p_a.x + p_b.x, p_a.y + p_b.y, p_a.z + p_b.z);
@@ -58,7 +58,7 @@ public class MyVector3
         return new(p_a.x * p_scalar, p_a.y * p_scalar, p_a.z * p_scalar);
     }
 
-    //multiplication of myvector3 with myquaternion
+    //Multiplication of myvector3 with myquaternion
     public static MyVector3 operator *(MyQuaternion q, MyVector3 v)
     {
         // t = 2 * cross(q.xyz, v)
@@ -75,6 +75,16 @@ public class MyVector3
             v.x + q.w * tx + cx,
             v.y + q.w * ty + cy,
             v.z + q.w * tz + cz
+        );
+    }
+
+    // Cross product (producto cruz)
+    public static MyVector3 Cross(MyVector3 p_a, MyVector3 p_b)
+    {
+        return new MyVector3(
+            p_a.y * p_b.z - p_a.z * p_b.y,
+            p_a.z * p_b.x - p_a.x * p_b.z,
+            p_a.x * p_b.y - p_a.y * p_b.x
         );
     }
 
