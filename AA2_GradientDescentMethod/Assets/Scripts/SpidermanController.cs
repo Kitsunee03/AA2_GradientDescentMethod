@@ -4,21 +4,18 @@ public class SpiderManController : MonoBehaviour
 {
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float jumpForce = 5f;
 
     [Header("Plane Bounds")]
     [SerializeField] private Collider planeBounds;
 
     [Header("Random Movement")]
     [SerializeField] private float changeDirectionInterval = 2f;
-    [SerializeField] private float jumpCheckInterval = 5f;
     [SerializeField] private Vector2 movementAreaMin = new(-10, -10);
     [SerializeField] private Vector2 movementAreaMax = new(10, 10);
 
     private Rigidbody rb;
     private MyVector3 randomDirection;
     private float directionTimer;
-    private float jumpTimer;
     private int previousDirection = -1;
 
     private void Start()
@@ -79,10 +76,8 @@ public class SpiderManController : MonoBehaviour
     private void ChooseRandomDirection()
     {
         int direction;
-        do
-        {
-            direction = Random.Range(0, 4);
-        } while (direction == previousDirection);
+        do        {            direction = Random.Range(0, 4);        } 
+        while (direction == previousDirection);
         
         previousDirection = direction;
         
@@ -94,17 +89,5 @@ public class SpiderManController : MonoBehaviour
             3 => MyVector3.back,      // atrás
             _ => MyVector3.right
         };
-        
-        /*string directionName = direction switch
-        {
-            0 => "Derecha",
-            1 => "Izquierda",
-            2 => "Adelante",
-            3 => "Atrás",
-            _ => "Derecha"
-        };
-        
-        Debug.Log($"Spiderman va hacia: {directionName} - Vector: ({randomDirection.x}, {randomDirection.y}, {randomDirection.z})");
-        */
     }
 }

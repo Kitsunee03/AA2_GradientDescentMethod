@@ -6,7 +6,6 @@ public class DocController : MonoBehaviour
 {
     private Camera mainCamera;
     [SerializeField] private List<IKGradient> arms;
-    private IKGradient activeArm;
 
     [Header("Movement Settings")]
     [SerializeField] private float movementSpeed = 5f;
@@ -87,24 +86,6 @@ public class DocController : MonoBehaviour
 
     private void HandleActiveArm()
     {
-        float activeDistance = float.MaxValue;
-
-        foreach (IKGradient arm in arms)
-        {
-            if (activeArm == null)
-            {
-                activeArm = arm;
-                activeDistance = activeArm.GetDistanceToTarget();
-                continue;
-            }
-
-            if (arm.GetDistanceToTarget() < activeDistance)
-            {
-                activeArm.IsInUse = false;
-                activeArm = arm;
-                activeArm.IsInUse = true;
-                activeDistance = arm.GetDistanceToTarget();
-            }
-        }
+        foreach (IKGradient arm in arms) { arm.IsInUse = arm.GetDistanceToTarget() < 4f; }
     }
 }
